@@ -138,6 +138,7 @@ class EMCGCN(torch.nn.Module):
         self.op_fc = nn.Linear(args.bert_feature_dim, args.gcn_dim)
 
         self.dense = nn.Linear(args.bert_feature_dim, args.gcn_dim)
+        self.dense_merge_loss = nn.Linear(40,10)
         self.num_layers = args.num_layers
         self.gcn_layers = nn.ModuleList()
 
@@ -167,13 +168,17 @@ class EMCGCN(torch.nn.Module):
         gcn_input = F.relu(self.dense(bert_feature))
         gcn_outputs = gcn_input
 
-        weight_prob_list = [biaffine_edge, word_pair_post_emb, word_pair_deprel_emb, word_pair_postag_emb, word_pair_synpost_emb]
         
         biaffine_edge_softmax = F.softmax(biaffine_edge, dim=-1) * tensor_masks
         word_pair_post_emb_softmax = F.softmax(word_pair_post_emb, dim=-1) * tensor_masks
         word_pair_deprel_emb_softmax = F.softmax(word_pair_deprel_emb, dim=-1) * tensor_masks
         word_pair_postag_emb_softmax = F.softmax(word_pair_postag_emb, dim=-1) * tensor_masks
         word_pair_synpost_emb_softmax = F.softmax(word_pair_synpost_emb, dim=-1) * tensor_masks
+
+        word_pair_synt_emb_softmax = torch.cat([word_pair_post_emb_softmax,word_pair_deprel_emb_softmax,\
+                                                word_pair_postag_emb_softmax,word_pair_synpost_emb_softmax],dim=-1)
+        word_pair_synt_emb_softmax = self.dense_merge_loss(word_pair_synt_emb_softmax)
+        weight_prob_list = [word_pair_synt_emb_softmax]
 
         self_loop = []
         for _ in range(batch):
