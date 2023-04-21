@@ -87,7 +87,7 @@ class Instance(object):
             self.token_range.append([token_start, token_end-1])
             token_start = token_end
         assert self.length == self.token_range[-1][-1]+2
-
+        # 此处代码存在冗余
         self.aspect_tags[self.length:] = -1
         self.aspect_tags[0] = -1
         self.aspect_tags[self.length-1] = -1
@@ -98,6 +98,7 @@ class Instance(object):
 
         self.tags[:, :] = -1
         self.tags_symmetry[:, :] = -1
+        # 此处代码与之前代码也存在冗余
         for i in range(1, self.length-1):
             for j in range(i, self.length-1):
                 self.tags[i][j] = 0
@@ -107,7 +108,7 @@ class Instance(object):
             opinion = triple['opinion_tags']
             aspect_span = get_spans(aspect)
             opinion_span = get_spans(opinion)
-
+            # set tag for aspect 和 set tag for opinion这两部分代码存在冗余
             '''set tag for aspect'''
             for l, r in aspect_span:
                 start = self.token_range[l][0]
@@ -150,7 +151,7 @@ class Instance(object):
                     self.opinion_tags[pl+1:pr+1] = -1
                     self.tags[pl+1:pr+1, :] = -1
                     self.tags[:, pl+1:pr+1] = -1
-
+            # sentiment tag
             for al, ar in aspect_span:
                 for pl, pr in opinion_span:
                     for i in range(al, ar+1):

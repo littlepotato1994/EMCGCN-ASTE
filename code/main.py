@@ -107,7 +107,8 @@ def train(args):
                 else:
                     l_p = F.cross_entropy(final_pred.reshape([-1, final_pred.shape[3]]), tags_flatten, weight=weight, ignore_index=-1)
 
-                loss = l_ba + l_rpd + l_dep + l_psc + l_tbd + l_p
+                # loss = l_ba + l_rpd + l_dep + l_psc + l_tbd + l_p
+                loss = l_rpd + l_dep + l_psc + l_tbd + l_p
             else:
                 preds = model(tokens, masks, word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost)[-1]
                 preds_flatten = preds.reshape([-1, preds.shape[3]])
@@ -192,6 +193,8 @@ def test(args):
 
 
 if __name__ == '__main__':
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"] = "4"
     # torch.set_printoptions(precision=None, threshold=float("inf"), edgeitems=None, linewidth=None, profile=None)
     parser = argparse.ArgumentParser()
 
@@ -203,7 +206,7 @@ if __name__ == '__main__':
                         help='option: pair, triplet')
     parser.add_argument('--mode', type=str, default="train", choices=["train", "test"],
                         help='option: train, test')
-    parser.add_argument('--dataset', type=str, default="res14", choices=["res14", "lap14", "res15", "res16"],
+    parser.add_argument('--dataset', type=str, default="lap14", choices=["res14", "lap14", "res15", "res16"],
                         help='dataset')
     parser.add_argument('--max_sequence_len', type=int, default=102,
                         help='max length of a sentence')
@@ -211,15 +214,15 @@ if __name__ == '__main__':
                         help='gpu or cpu')
 
     parser.add_argument('--bert_model_path', type=str,
-                        default="bert-base-uncased",
+                        default="../data/bert-base-uncased",
                         help='pretrained bert model path')
     
     parser.add_argument('--bert_feature_dim', type=int, default=768,
                         help='dimension of pretrained bert feature')
 
-    parser.add_argument('--batch_size', type=int, default=16,
+    parser.add_argument('--batch_size', type=int, default=8,
                         help='bathc size')
-    parser.add_argument('--epochs', type=int, default=10,
+    parser.add_argument('--epochs', type=int, default=70,
                         help='training epoch number')
     parser.add_argument('--class_num', type=int, default=len(label2id),
                         help='label number')

@@ -177,9 +177,9 @@ class EMCGCN(torch.nn.Module):
 
         self_loop = []
         for _ in range(batch):
-            self_loop.append(torch.eye(seq))
+            self_loop.append(torch.eye(seq))      # 对角阵全为1的矩阵
         self_loop = torch.stack(self_loop).to(self.args.device).unsqueeze(1).expand(batch, 5*self.args.class_num, seq, seq) * tensor_masks.permute(0, 3, 1, 2).contiguous()
-        
+        # self_loop : shape:[bs,5*args.class_num,seq,seq]
         weight_prob = torch.cat([biaffine_edge, word_pair_post_emb, word_pair_deprel_emb, \
             word_pair_postag_emb, word_pair_synpost_emb], dim=-1)
         weight_prob_softmax = torch.cat([biaffine_edge_softmax, word_pair_post_emb_softmax, \
