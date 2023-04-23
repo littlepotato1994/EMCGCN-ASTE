@@ -1,4 +1,4 @@
-#coding utf-8
+# coding utf-8
 
 import json, os
 import random
@@ -26,25 +26,25 @@ def get_bert_optimizer(model, args):
     optimizer_grouped_parameters = [
         {
             "params": [p for n, p in model.named_parameters() if
-                    not any(nd in n for nd in no_decay) and any(nd in n for nd in diff_part)],
+                       not any(nd in n for nd in no_decay) and any(nd in n for nd in diff_part)],
             "weight_decay": args.weight_decay,
             "lr": args.bert_lr
         },
         {
             "params": [p for n, p in model.named_parameters() if
-                    any(nd in n for nd in no_decay) and any(nd in n for nd in diff_part)],
+                       any(nd in n for nd in no_decay) and any(nd in n for nd in diff_part)],
             "weight_decay": 0.0,
             "lr": args.bert_lr
         },
         {
             "params": [p for n, p in model.named_parameters() if
-                    not any(nd in n for nd in no_decay) and not any(nd in n for nd in diff_part)],
+                       not any(nd in n for nd in no_decay) and not any(nd in n for nd in diff_part)],
             "weight_decay": args.weight_decay,
             "lr": args.learning_rate
         },
         {
             "params": [p for n, p in model.named_parameters() if
-                    any(nd in n for nd in no_decay) and not any(nd in n for nd in diff_part)],
+                       any(nd in n for nd in no_decay) and not any(nd in n for nd in diff_part)],
             "weight_decay": 0.0,
             "lr": args.learning_rate
         },
@@ -55,7 +55,6 @@ def get_bert_optimizer(model, args):
 
 
 def train(args):
-
     # load dataset
     train_sentence_packs = json.load(open(args.prefix + args.dataset + '/train.json'))
     random.shuffle(train_sentence_packs)
@@ -70,7 +69,8 @@ def train(args):
     args.postag_size = len(postag_vocab)
     args.synpost_size = len(synpost_vocab)
 
-    instances_train = load_data_instances(train_sentence_packs, post_vocab, deprel_vocab, postag_vocab, synpost_vocab, args)
+    instances_train = load_data_instances(train_sentence_packs, post_vocab, deprel_vocab, postag_vocab, synpost_vocab,
+                                          args)
     instances_dev = load_data_instances(dev_sentence_packs, post_vocab, deprel_vocab, postag_vocab, synpost_vocab, args)
     random.shuffle(instances_train)
     trainset = DataIterator(instances_train, args)
@@ -90,27 +90,39 @@ def train(args):
         print('Epoch:{}'.format(i))
         for j in trange(trainset.batch_count):
             _, sentences, tokens, lengths, masks, _, _, aspect_tags, tags, word_pair_position, \
-            word_pair_deprel, word_pair_pos, word_pair_synpost, tags_symmetry = trainset.get_batch(j)
+                word_pair_deprel, word_pair_pos, word_pair_synpost, tags_symmetry = trainset.get_batch(j)
             tags_flatten = tags.reshape([-1])
             tags_symmetry_flatten = tags_symmetry.reshape([-1])
             if args.relation_constraint:
-                predictions = model(tokens, masks, word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost)
-                # biaffine_pred, post_pred, deprel_pred, postag, synpost, final_pred = predictions[0], predictions[1], predictions[2], predictions[3], predictions[4], predictions[5]
-                syntactic,final_pred = predictions[0], predictions[1]
-
-                # l_rpd = 0.01 * F.cross_entropy(post_pred.reshape([-1, post_pred.shape[3]]), tags_symmetry_flatten, ignore_index=-1)
-                # l_dep = 0.01 * F.cross_entropy(deprel_pred.reshape([-1, deprel_pred.shape[3]]), tags_symmetry_flatten, ignore_index=-1)
-                # l_psc = 0.01 * F.cross_entropy(postag.reshape([-1, postag.shape[3]]), tags_symmetry_flatten, ignore_index=-1)
-                # l_tbd = 0.01 * F.cross_entropy(synpost.reshape([-1, synpost.shape[3]]), tags_symmetry_flatten, ignore_index=-1)
-                l_synt = 0.01 * F.cross_entropy(syntactic.reshape([-1, syntactic.shape[3]]), tags_symmetry_flatten, ignore_index=-1)
+                predictions = model(tokens, masks, word_pair_position, word_pair_deprel, word_pair_pos,
+                                    word_pair_synpost)
+                # biaffine_pred, post_pred, deprel_pred, postag, synpost, final_pred = predictions[0], predictions[1], \
+                # predictions[2], predictions[3], predictions[4], predictions[5]
+                # l_ba = 0.10 * F.cross_entropy(biaffine_pred.reshape([-1, biaffine_pred.shape[3]]),
+                #                               tags_symmetry_flatten, ignore_index=-1)
+                # l_rpd = 0.01 * F.cross_entropy(post_pred.reshape([-1, post_pred.shape[3]]), tags_symmetry_flatten,
+                #                                ignore_index=-1)
+                # l_dep = 0.01 * F.cross_entropy(deprel_pred.reshape([-1, deprel_pred.shape[3]]), tags_symmetry_flatten,
+                #                                ignore_index=-1)
+                # l_psc = 0.01 * F.cross_entropy(postag.reshape([-1, postag.shape[3]]), tags_symmetry_flatten,
+                #                                ignore_index=-1)
+                # l_tbd = 0.01 * F.cross_entropy(synpost.reshape([-1, synpost.shape[3]]), tags_symmetry_flatten,
+                #                                ignore_index=-1)
+                conv_outputs_add,conv_outputs_sub,final_pred = predictions[0], predictions[1], predictions[2]
+                l_add = 0.01 * F.cross_entropy(conv_outputs_add.reshape([-1, conv_outputs_add.shape[3]]), tags_symmetry_flatten,
+                                               ignore_index=-1)
+                l_sub = 0.01 * F.cross_entropy(conv_outputs_sub.reshape([-1, conv_outputs_sub.shape[3]]), tags_symmetry_flatten,
+                                               ignore_index=-1)
 
                 if args.symmetry_decoding:
-                    l_p = F.cross_entropy(final_pred.reshape([-1, final_pred.shape[3]]), tags_symmetry_flatten, weight=weight, ignore_index=-1)
+                    l_p = F.cross_entropy(final_pred.reshape([-1, final_pred.shape[3]]), tags_symmetry_flatten,
+                                          weight=weight, ignore_index=-1)
                 else:
-                    l_p = F.cross_entropy(final_pred.reshape([-1, final_pred.shape[3]]), tags_flatten, weight=weight, ignore_index=-1)
+                    l_p = F.cross_entropy(final_pred.reshape([-1, final_pred.shape[3]]), tags_flatten, weight=weight,
+                                          ignore_index=-1)
 
                 # loss = l_ba + l_rpd + l_dep + l_psc + l_tbd + l_p
-                loss = l_synt + l_p
+                loss = l_add + l_sub + l_p
             else:
                 preds = model(tokens, masks, word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost)[-1]
                 preds_flatten = preds.reshape([-1, preds.shape[3]])
@@ -145,7 +157,8 @@ def eval(model, dataset, args, FLAG=False):
         all_token_ranges = []
         for i in range(dataset.batch_count):
             sentence_ids, sentences, tokens, lengths, masks, sens_lens, token_ranges, aspect_tags, tags, \
-            word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost, tags_symmetry = dataset.get_batch(i)
+                word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost, tags_symmetry = dataset.get_batch(
+                i)
             preds = model(tokens, masks, word_pair_position, word_pair_deprel, word_pair_pos, word_pair_synpost)[-1]
             preds = F.softmax(preds, dim=-1)
             preds = torch.argmax(preds, dim=3)
@@ -161,7 +174,8 @@ def eval(model, dataset, args, FLAG=False):
         all_labels = torch.cat(all_labels, dim=0).cpu().tolist()
         all_lengths = torch.cat(all_lengths, dim=0).cpu().tolist()
 
-        metric = utils.Metric(args, all_preds, all_labels, all_lengths, all_sens_lengths, all_token_ranges, ignore_index=-1)
+        metric = utils.Metric(args, all_preds, all_labels, all_lengths, all_sens_lengths, all_token_ranges,
+                              ignore_index=-1)
         precision, recall, f1 = metric.score_uniontags()
         aspect_results = metric.score_aspect()
         opinion_results = metric.score_opinion()
@@ -196,6 +210,7 @@ def test(args):
 
 if __name__ == '__main__':
     import os
+
     os.environ["CUDA_VISIBLE_DEVICES"] = "4"
     # torch.set_printoptions(precision=None, threshold=float("inf"), edgeitems=None, linewidth=None, profile=None)
     parser = argparse.ArgumentParser()
@@ -218,7 +233,7 @@ if __name__ == '__main__':
     parser.add_argument('--bert_model_path', type=str,
                         default="../data/bert-base-uncased",
                         help='pretrained bert model path')
-    
+
     parser.add_argument('--bert_feature_dim', type=int, default=768,
                         help='dimension of pretrained bert feature')
 
