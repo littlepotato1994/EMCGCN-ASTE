@@ -215,7 +215,7 @@ if __name__ == '__main__':
     # torch.set_printoptions(precision=None, threshold=float("inf"), edgeitems=None, linewidth=None, profile=None)
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--prefix', type=str, default="../data/D1/",
+    parser.add_argument('--prefix', type=str, default="../data/D2/",
                         help='dataset and embedding path prefix')
     parser.add_argument('--model_dir', type=str, default="savemodel/",
                         help='model path prefix')
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     parser.add_argument('--emb_dropout', type=float, default=0.5)
     parser.add_argument('--num_layers', type=int, default=1)
     parser.add_argument('--pooling', default='avg', type=str, help='[max, avg, sum]')
-    parser.add_argument('--gcn_dim', type=int, default=300, help='dimension of GCN')
+    parser.add_argument('--gcn_dim', type=int, default=200, help='dimension of GCN')
     parser.add_argument('--relation_constraint', default=True, action='store_true')
     parser.add_argument('--symmetry_decoding', default=False, action='store_true')
 
